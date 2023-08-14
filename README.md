@@ -21,20 +21,16 @@ The labels of the three sessions for the same subjects are as follows:
 - session2_label = [2,1,3,0,0,2,0,2,3,3,2,3,2,0,1,1,2,1,0,3,0,1,3,1]; 
 - session3_label = [1,2,2,1,3,3,3,1,1,2,1,0,2,3,3,0,2,3,0,0,2,0,1,0]; 
 
+The labels with 0, 1, 2, and 3 denote the ground truth, neutral, sad, fear, and happy emotions, respectively.
+
 Since only session1 is available so this will be in used to create the labels.
 
 ## Part 1: EEG Understanding ##
 ### Data Exploration
 - Data is downsampled to 200Hz.
 - The EEG signals of the same channel (e.g., FP1) for different trials are different as shown in the image below.
-
+- The length of EEG signals depend on the duration of each video
 ![EEG Signals for a channel](images/eda_fp1_trials.png "EEG Signals for a channel")
-
-### Preprocessing:
-The preprocessing step contains following step:
-- Filtering data to between 0 to 75 Hz. It returns a new matrix with sampling frequency as 200Hz and between 0 to 75Hz. 
-- Use Finite Impulse Response `Low pass filter`. Bandpass was not used as it would make the eeg data unstable after processing. 
-- Filter order = 5
 
 ### Feature Extraction:
 In the feature extraction phase:
