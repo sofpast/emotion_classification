@@ -4,4 +4,4 @@ scipy==1.11.1
 PyWavelets==1.4.1
 scikit-learn
 openpyxl
-pip install matplotlib
+matplotlib
