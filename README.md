@@ -32,19 +32,22 @@ Since only session1 is available so this will be in used to create the labels.
 - The length of EEG signals depend on the duration of each video
 ![EEG Signals for a channel](images/eda_fp1_trials.png "EEG Signals for a channel")
 
-### Feature Extraction:
-In the feature extraction phase:
-- Divide the eeg pre-processed input into 5 frequency sub bands using `wavelet filter banks` technique.
-- In order to separate the five types of signal in the eeg recording i.e., alpha, beta, gamma, delta and theta as explained above, we use wavelet transform’s filter banks to separate the different frequencies. 
-- In the lower level, there is a filter that separates the frequency band in half and gives us high pass (detail coefficient) and low pass (approximation coefficient). 
+### Preprocessing and Feature Extraction:
+
+- First, the eeg signals is divided into 5 frequency sub bands by using `Discrete Wavelet Transform (DWT)`.
+- The DWT uses a specific type of wavelet filter bank, called a quadrature mirror filter bank (QMF). The QMF consists of two filters: a low-pass filter and a high-pass filter. The low-pass filter is used to extract the low-frequency components of the signal, while the high-pass filter is used to extract the high-frequency components of the signal. The output of the QMF is a set of coefficients, which represent the different frequency components of the signal.
+### FIXME
 - We further take the approximation coefficient and pass it through the filter. We do this until the desired frequency ranges are not achieved. Since the filters are successively applied, they are known as filter banks.
-We repeat the process for each channel. 
-- In each iteration for 62 channels, we extract band power for each sub-band i.e., 
-- Since there are 5 sub-bands so 5 features will be extracted for each channel. 
-- The feature extraction is complete with each eeg pre processed signal having output of `62 x 5 = 310` features.
+### END OF FIXME
+
+For each channel, the following steps are repeated:
+
+- Extract the band power for each sub-band.
+- There are 5 sub-bands, so 5 features are extracted for each channel.
+- The feature extraction is complete, and each EEG pre-processed signal has 310 features (62 channels x 5 features/channel).
 
 #### Bandpower Calculation
-Band power for each sub-band are calculated based on following fomular.
+Band power for each sub-band are calculated based on following formular.
 ```
 def calculate_band_power(coeff_d, band_limits):
     # Calculate the power spectrum of the coefficients.
@@ -57,7 +60,7 @@ def calculate_band_power(coeff_d, band_limits):
 ```
 
 ### Feature Reduction:
-In the feature reduction phase, we use Principal Component Analysis or PCA. PCA is an eigenvector-based statistical mechanism, which employs singular value decomposition, that transforms a set of correlated features into mutually uncorrelated training features, principal components or PCs. 
+In the feature reduction phase, we use Principal Component Analysis (PCA) from scikit-learn. PCA is a statistical procedure that uses an orthogonal transformation to convert a set of observations of possibly correlated variables into a set of values of linearly uncorrelated variables called principal components.
 
 Steps to perform Principal Components Analysis:
 1. Mean normalisation of features.
@@ -65,7 +68,7 @@ Steps to perform Principal Components Analysis:
 3. Calculate EigenVectors.
 4. Get the reduced features or principal components.
 
-After this process, we receive principal components PCs.
+After this process, we have a new set of features called principal components (PCs). The PCs are uncorrelated and ordered by decreasing variance.
 
 ## Part 2: Multi Classes Classification: 
 The problem would be famed to a multiclasses classification. Since most of data in forms of tabular data, so machine learning methods are selected to make it simple and more efficient.
@@ -73,7 +76,30 @@ The problem would be famed to a multiclasses classification. Since most of data 
 The PCs from the previous step will be fed into 
 multiple `sklearn classifiers` to see the results.
 
-the SVM classifier for output into emotions.
+The 3 classifiers are selected to experiments including SVM, RandomForestClassifier and GradientBoostedClassifier.
+
+### FIXME
+image here
+### END OF FIXME
+
+### Findings
+#### Experiment Results
+
+- The SVM model has the highest F1 score for class 0 (0.60), followed by the Random Forest model (0.55) and the Gradient Boosting model (0.52).
+- The SVM model has the highest precision for class 2 (0.62), followed by the Random Forest model (0.60) and the Gradient Boosting model (0.48).
+- The SVM model has the highest recall for class 1 (0.75), followed by the Random Forest model (0.60) and the Gradient Boosting model (0.47).
+- The Gradient Boosting model has the slowest training time, followed by the SVM model and the Random Forest model.
+
+Overall, the SVM model seems to be the best performing model, followed by the Random Forest model and the Gradient Boosting model. Dataset is balanced so models are not biased towards any particular class. However, the F1 score is not really high. 
+
+#### Improvement Points
+
+Based on the experimental results, here are some points that could help improve the model:
+
+- Even after reducing the number of features to 100 principal components (PCs), the number of features is still high for machine learning models, as the dataset is not large. Collecting more data would help improve this.
+- Only band power is currently calculated to convert into features to feed into machine learning models. We can improve the model by finding more relevant features, such as band power.
+- I have already tried using grid search to find the best parameters for machine learning models, but I did not have enough time to experiment with many parameters. Fine-tuning these hyperparameters would help improve the model.
+- Finally, trying some basic deep learning models would also be helpful.
 
 
 ### References
