@@ -4,10 +4,8 @@ This repository contains the source code for emotion classification from `SEED-I
 ## Introduction: ##
 The project aims to classify emotions into four main groups including `neutral`, `sad`, `fear`, and `happy` based on raw electroencephalogram (EEG) signals. 
 
-- A note: an electroencephalogram (EEG) is a machine  that detects electrical activity in a human brain using small metal discs (electrodes) attached to the scalp. The brain cells communicate via electrical impulses and are active all the time, even when we are asleep. This activity shows up as wavy lines on an EEG recording.
-
 ## Dataset Summary ##
-The provided data set (downloaded from Google Drive) contains 3 folder, in which folder 1 contain 10 .mat (Matlab) files. The overall description of the experiment is described in the image below:
+The data set provided (downloaded from Google Drive) consists of 3 folders, of which only folder 1 contains 10 .mat (MATLAB) files. The overall description of the experiment is shown in the image below.
 
 ![Experiment Overview](images/eeg_trial.png "Experiment Overview")
 ### Raw EEG Signals:
@@ -30,24 +28,30 @@ Since only session1 is available so this will be in used to create the labels.
 - Data is downsampled to 200Hz.
 - The EEG signals of the same channel (e.g., FP1) for different trials are different as shown in the image below.
 - The length of EEG signals depend on the duration of each video
+
 ![EEG Signals for a channel](images/eda_fp1_trials.png "EEG Signals for a channel")
 
 ### Preprocessing and Feature Extraction:
 
 - First, the eeg signals is divided into 5 frequency sub bands by using `Discrete Wavelet Transform (DWT)`.
-- The DWT uses a specific type of wavelet filter bank, called a quadrature mirror filter bank (QMF). The QMF consists of two filters: a low-pass filter and a high-pass filter. The low-pass filter is used to extract the low-frequency components of the signal, while the high-pass filter is used to extract the high-frequency components of the signal. The output of the QMF is a set of coefficients, which represent the different frequency components of the signal.
-### FIXME
-- We further take the approximation coefficient and pass it through the filter. We do this until the desired frequency ranges are not achieved. Since the filters are successively applied, they are known as filter banks.
-### END OF FIXME
+- The `DWT` uses a specific type of wavelet filter bank, called a `quadrature mirror filter bank (QMF)`. The QMF consists of two filters: a low-pass filter and a high-pass filter. The low-pass filter is used to extract the low-frequency components of the signal, while the high-pass filter is used to extract the high-frequency components of the signal. The output of the QMF is a set of coefficients, which represent the different frequency components of the signal.
+- Two parameters are defined at the begining:
+```
+WAVELET = "db6"  # method to transform eeg signals
+MAX_LEVEL = 5  # number of sub-bands that will be divided including delta, theta, alpha, beta and gamma.
+```
+- Then perform discrete wavelet transform (DWT) on an EEG signal by following code. 
+```
+for band in range(MAX_LEVEL):
+        (data, coeff_d) = pywt.dwt(data, WAVELET)
+        dwt_bands.append(coeff_d)
+```
+This will return the coefficients of the DWT, the coefficients then use to calculate the band power for each band.
 
-For each channel, the following steps are repeated:
+**Bandpower Calculation**
 
-- Extract the band power for each sub-band.
-- There are 5 sub-bands, so 5 features are extracted for each channel.
-- The feature extraction is complete, and each EEG pre-processed signal has 310 features (62 channels x 5 features/channel).
+The band power for each sub-band is calculated using the following formula:
 
-#### Bandpower Calculation
-Band power for each sub-band are calculated based on following formular.
 ```
 def calculate_band_power(coeff_d, band_limits):
     # Calculate the power spectrum of the coefficients.
@@ -58,39 +62,57 @@ def calculate_band_power(coeff_d, band_limits):
 
     return band_power
 ```
+Those steps are repeated for all 62 channels. 
 
-### Feature Reduction:
-In the feature reduction phase, we use Principal Component Analysis (PCA) from scikit-learn. PCA is a statistical procedure that uses an orthogonal transformation to convert a set of observations of possibly correlated variables into a set of values of linearly uncorrelated variables called principal components.
+**Calculate the number of features and data points**
 
-Steps to perform Principal Components Analysis:
-1. Mean normalisation of features.
-2. Calculating Covariance Matrix.
-3. Calculate EigenVectors.
-4. Get the reduced features or principal components.
+- There are 10 participants, each of which has 24 trials.
+- Each trial has 62 channels.
 
-After this process, we have a new set of features called principal components (PCs). The PCs are uncorrelated and ordered by decreasing variance.
+Therefore:
+
+- For each participant and trial, the EEG signals will be collected as a matrix of size (62, n), where `n` is the duration of the video.
+- There will be a total of 24 x (62, n) matrices for each participant.
+- The data will be converted into band powers of 5 sub-bands, so the number of features for each trial will be 62 x 5 = 310.
+The total number of data points will be (10 x 24, 62 x 5) = (240, 310).
+
+### Reducing Dimensionality:
+310 features seem to be large for machine learning model, so Principal Component Analysis (PCA) from scikit-learn will be applied to reduce the number of features. 
+
+- `n_components` is set to 100 as the number of features to keep.
+
+![Band power of normalized data by emotions](images/after_normalized.png "Band power of normalized data by emotions")
+
+The image shows that happy emotions are associated with higher band power in the high-frequency bands (beta and gamma), while sad emotions are associated with lower band power in the low-frequency bands (delta and theta). It seems to make sense.
 
 ## Part 2: Multi Classes Classification: 
-The problem would be famed to a multiclasses classification. Since most of data in forms of tabular data, so machine learning methods are selected to make it simple and more efficient.
 
-The PCs from the previous step will be fed into 
-multiple `sklearn classifiers` to see the results.
+The problem can be formulated as a multi-class classification problem. Since the data is in tabular form, machine learning methods are selected to make the problem simpler and more efficient.
 
-The 3 classifiers are selected to experiments including SVM, RandomForestClassifier and GradientBoostedClassifier.
+The principal components (PCs) from the previous step will be fed into multiple `scikit-learn classifiers` to evaluate the results.
 
-### FIXME
-image here
-### END OF FIXME
+The three classifiers selected for the experiment are `Support Vector Machines (SVM)`, `Random Forest Classifiers`, and `Gradient Boosting Classifiers`.
+
+**Grid Search and Machine learning models**
+
+- The experiment used a combination of grid search and machine learning models, rather than feeding data directly to the models.
+- This may have increased the computational cost, but it allowed us to find a better combination of hyperparameters in the grid.
+
+**Experiment Result**
+
+The experiment results are extracted from `sklearn classification report` along with the processing time (seconds) in the table below.
+
+![Experiment Result](images/final_result.png "Experiment Results")
 
 ### Findings
 #### Experiment Results
 
-- The SVM model has the highest F1 score for class 0 (0.60), followed by the Random Forest model (0.55) and the Gradient Boosting model (0.52).
-- The SVM model has the highest precision for class 2 (0.62), followed by the Random Forest model (0.60) and the Gradient Boosting model (0.48).
-- The SVM model has the highest recall for class 1 (0.75), followed by the Random Forest model (0.60) and the Gradient Boosting model (0.47).
+- The SVM model has the highest F1 score for class 0 (0.60), followed by the Random Forest model (0.42) and the Gradient Boosting model (0.50).
+- The SVM model has the highest precision for class 2 (0.62), followed by the Random Forest model (0.44) and the Gradient Boosting model (0.55).
+- The SVM model has the highest recall for class 1 (0.75), followed by the Random Forest model (0.62) and the Gradient Boosting model (0.46).
 - The Gradient Boosting model has the slowest training time, followed by the SVM model and the Random Forest model.
 
-Overall, the SVM model seems to be the best performing model, followed by the Random Forest model and the Gradient Boosting model. Dataset is balanced so models are not biased towards any particular class. However, the F1 score is not really high. 
+Overall, the SVM model seems to be the best performing model, followed by the Gradient Boosting model and the Random Forest model. Dataset is balanced so models are not biased towards any particular class. However, the F1 score is not really high. 
 
 #### Improvement Points
 
@@ -103,8 +125,8 @@ Based on the experimental results, here are some points that could help improve 
 
 
 ### References
-1. [Seed Dataset](http://bcmi.sjtu.edu.cn/~seed/).
-2. [Wavelet transform](http://users.rowan.edu/~polikar/WTtutorial.html).
-3. [Principal Components Analysis](https://www.coursera.org/learn/machine-learning).
-3. [Support Vector Machines](https://www.coursera.org/learn/machine-learning).
+1. [Seed Dataset](https://bcmi.sjtu.edu.cn/home/seed/).
+2. [Wavelet transform](https://pywavelets.readthedocs.io/en/latest/ref/dwt-discrete-wavelet-transform.html).
+3. [scikit-learn](https://scikit-learn.org/stable/).
+
 
